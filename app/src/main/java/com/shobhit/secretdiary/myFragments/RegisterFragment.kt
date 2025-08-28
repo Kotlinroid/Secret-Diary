@@ -5,7 +5,6 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
 import com.shobhit.secretdiary.R
@@ -19,13 +18,18 @@ import com.shobhit.secretdiary.myViewModel.AuthViewModel
 import com.shobhit.secretdiary.myViewModelFactory.AuthViewModelFactory
 
 class RegisterFragment : Fragment() {
-    lateinit var binding: FragmentRegisterBinding
-    lateinit var authViewModel: AuthViewModel
+
+    // DataBinding for accessing layout views
+    private lateinit var binding: FragmentRegisterBinding
+
+    // ViewModel for handling registration logic
+    private lateinit var authViewModel: AuthViewModel
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
+        // Inflate layout with ViewBinding
         binding = FragmentRegisterBinding.inflate(inflater, container, false)
         return binding.root
     }
@@ -33,15 +37,18 @@ class RegisterFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        /** ---------------------- ViewModel Setup ---------------------- **/
         val sessionManager = SessionManager(requireContext())
         val authRepository = AuthRepository(RetrofitInstance.api)
         val factory = AuthViewModelFactory(authRepository, sessionManager)
         authViewModel = ViewModelProvider(this, factory)[AuthViewModel::class.java]
 
+        /** ---------------------- Back Button Click ---------------------- **/
         binding.backButtonLayout.setOnClickListener {
             findNavController().popBackStack()
         }
 
+        /** ---------------------- Register Button Click ---------------------- **/
         binding.registerButton.setOnClickListener {
             val username = binding.usernameEditText.text.toString().trim()
             val email = binding.emailEditText.text.toString().trim()
@@ -50,50 +57,74 @@ class RegisterFragment : Fragment() {
             val password = binding.passwordEditText.text.toString().trim()
             val confirmPassword = binding.confirmPasswordEditText.text.toString().trim()
 
-            if(username.isEmpty()){
-                binding.usernameEditText.error = "Username is required"
-                return@setOnClickListener
-            }else if(email.isEmpty()){
-                binding.emailEditText.error = "Email is required"
-                return@setOnClickListener
-            }else if(fName.isEmpty()){
-                binding.fNameEditText.error = "First name is required"
-                return@setOnClickListener
-            }else if(lName.isEmpty()){
-                binding.lNameEditText.error = "Last name is required"
-                return@setOnClickListener
-            }else if(password.isEmpty()){
-                binding.passwordEditText.error = "Password is required"
-                return@setOnClickListener
-            }else if(confirmPassword.isEmpty()){
-                binding.confirmPasswordEditText.error = "Confirm password is required"
-                return@setOnClickListener
-            }else if(password != confirmPassword){
-                binding.confirmPasswordEditText.error = "Passwords do not match"
-                return@setOnClickListener
+            // Validate input fields
+            when {
+                username.isEmpty() -> {
+                    binding.usernameEditText.error = "Username is required"
+                    return@setOnClickListener
+                }
+                email.isEmpty() -> {
+                    binding.emailEditText.error = "Email is required"
+                    return@setOnClickListener
+                }
+                fName.isEmpty() -> {
+                    binding.fNameEditText.error = "First name is required"
+                    return@setOnClickListener
+                }
+                lName.isEmpty() -> {
+                    binding.lNameEditText.error = "Last name is required"
+                    return@setOnClickListener
+                }
+                password.isEmpty() -> {
+                    binding.passwordEditText.error = "Password is required"
+                    return@setOnClickListener
+                }
+                confirmPassword.isEmpty() -> {
+                    binding.confirmPasswordEditText.error = "Confirm password is required"
+                    return@setOnClickListener
+                }
+                password != confirmPassword -> {
+                    binding.confirmPasswordEditText.error = "Passwords do not match"
+                    return@setOnClickListener
+                }
+                else -> {
+                    // Call ViewModel function to register user
+                    authViewModel.registerUser(
+                        RegisterRequest(
+                            email,
+                            username,
+                            fName,
+                            lName,
+                            password,
+                            confirmPassword,
+                            "professor" // default role
+                        )
+                    )
+                }
             }
-            authViewModel.registerUser(RegisterRequest(email, username, fName, lName, password, confirmPassword,
-                    "professor"
-                ))
         }
 
-        authViewModel.buttonStatus.observe(viewLifecycleOwner){
-            binding.registerButton.isEnabled = it
+        /** ---------------------- Observe Button State ---------------------- **/
+        authViewModel.buttonStatus.observe(viewLifecycleOwner) { isEnabled ->
+            binding.registerButton.isEnabled = isEnabled
         }
 
-        authViewModel.errorMessage.observe(viewLifecycleOwner){
-            showCustomSnackbar(binding.root, it, alert = true)
+        /** ---------------------- Observe Error Messages ---------------------- **/
+        authViewModel.errorMessage.observe(viewLifecycleOwner) { error ->
+            showCustomSnackbar(binding.root, error, alert = true)
         }
 
-        authViewModel.registerResponse.observe(viewLifecycleOwner){
-            if (it != null){
+        /** ---------------------- Observe Registration Response ---------------------- **/
+        authViewModel.registerResponse.observe(viewLifecycleOwner) { response ->
+            if (response != null) {
                 showCustomSnackbar(binding.root, "Registration Successful")
-                findNavController().popBackStack()
+                findNavController().popBackStack() // Go back to previous screen
             } else {
                 showCustomSnackbar(binding.root, "Registration Failed", alert = true)
             }
         }
 
+        /** ---------------------- Navigate to Login ---------------------- **/
         binding.loginText.setOnClickListener {
             findNavController().navigate(R.id.action_registerFragment_to_loginFragment)
         }

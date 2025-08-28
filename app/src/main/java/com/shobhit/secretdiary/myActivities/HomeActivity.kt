@@ -2,21 +2,16 @@ package com.shobhit.secretdiary.myActivities
 
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
-import android.view.View
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
-import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
+import androidx.core.widget.addTextChangedListener
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.StaggeredGridLayoutManager
-import com.shobhit.secretdiary.R
 import com.shobhit.secretdiary.databinding.ActivityHomeBinding
-import com.shobhit.secretdiary.myDataClass.NoteEntity
+import com.shobhit.secretdiary.myAdapter.NoteAdapter
 import com.shobhit.secretdiary.myInterface.OnClickListener
 import com.shobhit.secretdiary.myObject.CallInterface
 import com.shobhit.secretdiary.myRepository.NoteRepository
@@ -25,49 +20,66 @@ import com.shobhit.secretdiary.myUtilities.SessionManager
 import com.shobhit.secretdiary.myUtilities.showCustomSnackbar
 import com.shobhit.secretdiary.myViewModel.NoteViewModel
 import com.shobhit.secretdiary.myViewModelFactory.NoteViewModelFactory
-import androidx.core.widget.addTextChangedListener
-import com.shobhit.secretdiary.myAdapter.NoteAdapter
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+/**
+ * HomeActivity - Displays all notes for the logged-in user.
+ * Handles note search, adding new notes, and user logout.
+ */
 class HomeActivity : AppCompatActivity(), OnClickListener {
-    lateinit var binding: ActivityHomeBinding
+
+    // DataBinding for layout access
+    private lateinit var binding: ActivityHomeBinding
+
+    // Double back press to exit variables
     private var backPressedTime: Long = 0
     private lateinit var toast: Toast
-    lateinit var adapter: NoteAdapter
-    lateinit var noteViewModel: NoteViewModel
+
+    // RecyclerView Adapter for notes
+    private lateinit var adapter: NoteAdapter
+
+    // ViewModel for notes
+    private lateinit var noteViewModel: NoteViewModel
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        /** ---------------------- View Binding & Theme ---------------------- **/
         binding = ActivityHomeBinding.inflate(layoutInflater)
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
         setContentView(binding.root)
 
+        /** ---------------------- Interface for Click Events ---------------------- **/
         CallInterface.onClickListener = this
 
-        // Set up of Login Successful SnackBar
+        /** ---------------------- Snackbars on Login/Note Action ---------------------- **/
         val showSnackbar = intent.getBooleanExtra("showSnackbar", false)
-
         val noteMsg = intent.getStringExtra("noteMsg")
-        if (noteMsg != null) {
-            showCustomSnackbar(binding.root, noteMsg)
+
+        noteMsg?.let {
+            showCustomSnackbar(binding.root, it)
         }
+
         if (showSnackbar) {
             showCustomSnackbar(binding.root, "Login Successful")
         }
 
+        /** ---------------------- ViewModel Setup ---------------------- **/
         val email = SessionManager(application).getUserEmail() ?: ""
         val dao = NoteDatabase.getDatabase(this).noteDao()
         val noteRepository = NoteRepository(dao)
         val factory = NoteViewModelFactory(this, noteRepository)
         noteViewModel = ViewModelProvider(this, factory)[NoteViewModel::class.java]
 
+        /** ---------------------- RecyclerView Setup ---------------------- **/
         adapter = NoteAdapter(onNoteClick = { note ->
-            Intent(this, NewNoteActivity::class.java).also {
-                it.putExtra("id", note.id)
-                it.putExtra("email", note.email)
-                it.putExtra("current_date", note.date)
-                startActivity(it)
+            Intent(this, NewNoteActivity::class.java).apply {
+                putExtra("id", note.id)
+                putExtra("email", note.email)
+                putExtra("current_date", note.date)
+                startActivity(this)
             }
         })
 
@@ -75,12 +87,14 @@ class HomeActivity : AppCompatActivity(), OnClickListener {
             StaggeredGridLayoutManager(2, GridLayoutManager.VERTICAL)
         binding.recyclerView.adapter = adapter
 
-        noteViewModel.getNotes().observe(this) {
-            adapter.submitList(it) {
-                binding.recyclerView.scrollToPosition(0)
+        /** ---------------------- Observe Notes List ---------------------- **/
+        noteViewModel.getNotes().observe(this) { notes ->
+            adapter.submitList(notes) {
+                binding.recyclerView.scrollToPosition(0) // Always scroll to top when updated
             }
         }
 
+        /** ---------------------- Search Notes ---------------------- **/
         binding.searchEditText.addTextChangedListener { text ->
             val query = text.toString()
             noteViewModel.searchNotes(query).observe(this) { notes ->
@@ -88,25 +102,27 @@ class HomeActivity : AppCompatActivity(), OnClickListener {
             }
         }
 
+        /** ---------------------- Add New Note ---------------------- **/
         binding.addNotesButton.setOnClickListener {
-            Intent(this, NewNoteActivity::class.java).also {
-                it.putExtra("id", 0)
-                it.putExtra("email", email)
-                it.putExtra("current_date", getCurrentDate())
-                startActivity(it)
-
+            Intent(this, NewNoteActivity::class.java).apply {
+                putExtra("id", 0)
+                putExtra("email", email)
+                putExtra("current_date", getCurrentDate())
+                startActivity(this)
             }
         }
 
+        /** ---------------------- Logout ---------------------- **/
         binding.logoutLayout.setOnClickListener {
             SessionManager(this).logout()
-            Intent(this, AuthActivity::class.java).also {
-                it.putExtra("showSnackbar", true)
-                startActivity(it)
+            Intent(this, AuthActivity::class.java).apply {
+                putExtra("showSnackbar", true)
+                startActivity(this)
             }
             finish()
         }
 
+        /** ---------------------- Double Back Press to Exit ---------------------- **/
         toast = Toast.makeText(this, "Press back again to exit", Toast.LENGTH_SHORT)
 
         onBackPressedDispatcher.addCallback(
@@ -125,14 +141,15 @@ class HomeActivity : AppCompatActivity(), OnClickListener {
         )
     }
 
+    /** ---------------------- Utility: Get Current Date ---------------------- **/
     fun getCurrentDate(): String {
         val dateFormat = SimpleDateFormat("dd/MM", Locale.getDefault())
         return dateFormat.format(Date())
     }
 
+    /** ---------------------- Interface Callbacks ---------------------- **/
     override fun onClickListener(msg: String) {
         showCustomSnackbar(binding.root, msg)
-
     }
 
     override fun onDeleteClickListener() {
