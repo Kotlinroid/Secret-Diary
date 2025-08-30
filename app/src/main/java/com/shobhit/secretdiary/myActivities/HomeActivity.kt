@@ -13,13 +13,18 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.StaggeredGridLayoutManager
 import com.shobhit.secretdiary.databinding.ActivityHomeBinding
 import com.shobhit.secretdiary.myAdapter.NoteAdapter
+import com.shobhit.secretdiary.myFragments.FingerprintDialogFragment
 import com.shobhit.secretdiary.myInterface.OnClickListener
 import com.shobhit.secretdiary.myObject.CallInterface
+import com.shobhit.secretdiary.myObject.RetrofitInstance
+import com.shobhit.secretdiary.myRepository.AuthRepository
 import com.shobhit.secretdiary.myRepository.NoteRepository
 import com.shobhit.secretdiary.myUtilities.NoteDatabase
 import com.shobhit.secretdiary.myUtilities.SessionManager
 import com.shobhit.secretdiary.myUtilities.showCustomSnackbar
+import com.shobhit.secretdiary.myViewModel.AuthViewModel
 import com.shobhit.secretdiary.myViewModel.NoteViewModel
+import com.shobhit.secretdiary.myViewModelFactory.AuthViewModelFactory
 import com.shobhit.secretdiary.myViewModelFactory.NoteViewModelFactory
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -43,6 +48,7 @@ class HomeActivity : AppCompatActivity(), OnClickListener {
 
     // ViewModel for notes
     private lateinit var noteViewModel: NoteViewModel
+    private lateinit var authViewModel: AuthViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -74,15 +80,24 @@ class HomeActivity : AppCompatActivity(), OnClickListener {
         val factory = NoteViewModelFactory(this, noteRepository)
         noteViewModel = ViewModelProvider(this, factory)[NoteViewModel::class.java]
 
+        val sessionManager = SessionManager(this)
+        val authRepository = AuthRepository(RetrofitInstance.api)
+        val authFactory = AuthViewModelFactory(authRepository, sessionManager)
+        authViewModel = ViewModelProvider(this, authFactory)[AuthViewModel::class.java]
+
         /** ---------------------- RecyclerView Setup ---------------------- **/
         adapter = NoteAdapter(onNoteClick = { note ->
             Intent(this, NewNoteActivity::class.java).apply {
                 putExtra("id", note.id)
                 putExtra("email", note.email)
                 putExtra("current_date", note.date)
+                putExtra("isLocked", note.isLocked)
                 startActivity(this)
             }
-        })
+        },
+            viewModel = noteViewModel,
+            lifecycleOwner = this,
+            fragmentManager = supportFragmentManager)
 
         binding.recyclerView.layoutManager =
             StaggeredGridLayoutManager(2, GridLayoutManager.VERTICAL)
@@ -114,13 +129,14 @@ class HomeActivity : AppCompatActivity(), OnClickListener {
                 putExtra("id", 0)
                 putExtra("email", email)
                 putExtra("current_date", getCurrentDate())
+                putExtra("is_locked", false)
                 startActivity(this)
             }
         }
 
         /** ---------------------- Logout ---------------------- **/
         binding.logoutLayout.setOnClickListener {
-            SessionManager(this).logout()
+            authViewModel.logoutUser()
             Intent(this, AuthActivity::class.java).apply {
                 putExtra("showSnackbar", true)
                 startActivity(this)
@@ -161,4 +177,5 @@ class HomeActivity : AppCompatActivity(), OnClickListener {
     override fun onDeleteClickListener() {
         finish()
     }
+
 }

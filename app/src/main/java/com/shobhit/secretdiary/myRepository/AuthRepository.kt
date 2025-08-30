@@ -17,4 +17,7 @@ class AuthRepository(private val apiService: ApiInterface) {
         return apiService.loginUser(loginRequest)
     }
 
+    suspend fun logoutUser(token: String?): Response<Unit> {
+        return apiService.logoutUser("Bearer $token")
+    }
 }

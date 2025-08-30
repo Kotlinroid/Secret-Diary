@@ -2,6 +2,7 @@ package com.shobhit.secretdiary.myActivities
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
@@ -20,7 +21,6 @@ import com.shobhit.secretdiary.myViewModelFactory.NoteViewModelFactory
  * Handles note saving, deletion, and loading existing note data.
  */
 class NewNoteActivity : AppCompatActivity() {
-
     // DataBinding for accessing UI components
     private lateinit var binding: ActivityNewNoteBinding
 
@@ -32,6 +32,7 @@ class NewNoteActivity : AppCompatActivity() {
 
     // Current date string for note creation
     private lateinit var currentDate: String
+    private var isLocked: Boolean = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,10 +58,14 @@ class NewNoteActivity : AppCompatActivity() {
         /** ----------------- Get Intent Data ----------------- **/
         val id = intent.getIntExtra("id", 0)
         email = intent.getStringExtra("email").toString()
+        isLocked = intent.getBooleanExtra("isLocked", false)
         currentDate = intent.getStringExtra("current_date").toString()
+
+        Log.d("Lock", isLocked.toString())
 
         // Set the current note ID in ViewModel
         noteViewModel.setNoteId(id)
+
 
         /** ----------------- If Editing an Existing Note ----------------- **/
         if (id != 0) {
@@ -81,10 +86,20 @@ class NewNoteActivity : AppCompatActivity() {
 
         /** ----------------- Delete Button Click ----------------- **/
         binding.btnDelete.setOnClickListener {
-            noteViewModel.deleteById(id)
-            CallInterface.onClickListener.onDeleteClickListener()
-            navigate()
-            finish()
+//            noteViewModel.deleteById(id)
+//            CallInterface.onClickListener.onDeleteClickListener()
+//            navigate()
+//            finish()
+
+//            noteViewModel.getNoteById(id).observe(this) { note ->
+                if (isLocked) {
+                    isLocked = false
+                    saveNote()
+                } else {
+                    isLocked = true
+                    saveNote()
+                }
+//            }
         }
 
         /** ----------------- Auto-Save on Text Change ----------------- **/
@@ -118,8 +133,9 @@ class NewNoteActivity : AppCompatActivity() {
             id = noteViewModel.currentNoteId,
             email = email,
             date = currentDate,
-            title = binding.noteTitleEditText.text.toString(),
-            content = binding.noteContentEditText.text.toString()
+            title = binding.noteTitleEditText.text.toString().trim(),
+            content = binding.noteContentEditText.text.toString().trim(),
+            isLocked = isLocked
         )
         noteViewModel.insert(note)
     }

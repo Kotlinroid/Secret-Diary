@@ -34,8 +34,8 @@
                     android:layout_height="20dp"
                     android:layout_alignParentTop="true"
                     android:layout_alignParentEnd="true"
-                    android:src="@drawable/search_icon"
-                    app:tint="@color/white" />
+                    android:src="@drawable/lock_open_right_24px"
+                    app:tint="@color/light_purple" />
 
                 <!-- Title -->
                 <TextView

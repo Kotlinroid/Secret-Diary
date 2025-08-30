@@ -6,6 +6,7 @@ import com.shobhit.secretdiary.myDataClass.RegisterRequest
 import com.shobhit.secretdiary.myDataClass.RegisterResponse
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.Header
 import retrofit2.http.POST
 
 interface ApiInterface {
@@ -15,4 +16,7 @@ interface ApiInterface {
 
     @POST("third/account/register/")
     suspend fun registerUser(@Body registerRequest: RegisterRequest): Response<RegisterResponse>
+
+    @POST("third/account/logout/")
+    suspend fun logoutUser(@Header("Authorization") token: String): Response<Unit>
 }

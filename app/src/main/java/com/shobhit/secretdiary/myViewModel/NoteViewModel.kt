@@ -18,6 +18,7 @@ class NoteViewModel(
     private var repository: NoteRepository
 ) : ViewModel() {
 
+
     // Get the logged-in user's email from the session
     val email: String = SessionManager(context).getUserEmail() ?: ""
 
@@ -29,7 +30,6 @@ class NoteViewModel(
 
     /**
      * Retrieves all notes for the current logged-in user.
-     * @return LiveData list of NoteEntity objects.
      */
     fun getNotes(): LiveData<List<NoteEntity>> {
         return repository.getNotesByEmail(email)
@@ -38,7 +38,6 @@ class NoteViewModel(
     /**
      * Inserts a new note or updates an existing one after a short delay (500ms).
      * This delay helps in reducing unnecessary database writes during rapid typing.
-     * @param note The NoteEntity object to be saved.
      */
     fun insert(note: NoteEntity) {
         saveJob?.cancel() // Cancel any ongoing save job to avoid duplicates
@@ -55,8 +54,6 @@ class NoteViewModel(
 
     /**
      * Searches notes based on a query string for the logged-in user.
-     * @param query The search keyword.
-     * @return LiveData list of matching NoteEntity objects.
      */
     fun searchNotes(query: String): LiveData<List<NoteEntity>> {
         return repository.searchNotes(email, query)
@@ -64,7 +61,6 @@ class NoteViewModel(
 
     /**
      * Deletes a note by its ID.
-     * @param id The note's unique ID.
      */
     fun deleteById(id: Int) = viewModelScope.launch {
         repository.deleteById(id)
@@ -72,16 +68,16 @@ class NoteViewModel(
 
     /**
      * Sets the current note ID (used when editing existing notes).
-     * @param id The note's unique ID.
      */
     fun setNoteId(id: Int) {
         currentNoteId = id
     }
 
+    fun getNoteById2(id: Int): NoteEntity? {
+        return repository.getNoteById(id).value
+    }
     /**
      * Retrieves a note by its ID.
-     * @param id The note's unique ID.
-     * @return LiveData of NoteEntity.
      */
     fun getNoteById(id: Int): LiveData<NoteEntity> {
         return repository.getNoteById(id)
