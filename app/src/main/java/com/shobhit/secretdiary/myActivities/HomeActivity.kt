@@ -2,6 +2,7 @@ package com.shobhit.secretdiary.myActivities
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.View
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
@@ -91,6 +92,11 @@ class HomeActivity : AppCompatActivity(), OnClickListener {
         noteViewModel.getNotes().observe(this) { notes ->
             adapter.submitList(notes) {
                 binding.recyclerView.scrollToPosition(0) // Always scroll to top when updated
+            }
+            if (notes.isEmpty()) {
+                binding.noNotesLayout.visibility = View.VISIBLE
+            } else {
+                binding.noNotesLayout.visibility = View.GONE
             }
         }
 
