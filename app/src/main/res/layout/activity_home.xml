@@ -125,7 +125,7 @@
             app:layout_constraintBottom_toBottomOf="@id/recyclerView">
 
             <ImageView
-                android:id="@+id/bulb_icon"
+                android:id="@+id/no_notes_icon"
                 android:layout_width="128dp"
                 android:layout_height="128dp"
                 android:src="@drawable/bulb_icon_48"
@@ -133,6 +133,7 @@
                 app:tint="@color/light_purple" />
 
             <TextView
+                android:id="@+id/no_notes_text"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"

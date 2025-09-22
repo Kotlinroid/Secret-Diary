@@ -13,8 +13,6 @@ fun showCustomSnackbar(anchor: View, message: String, alert: Boolean = false){
 
     snackbar.view.background = ContextCompat.getDrawable(anchor.context, R.drawable.snackbar_background)
 
-//    snackbar.view.backgroundTintList = ContextCompat.getColorStateList(anchor.context, R.color.light_purple)
-
     val textView = snackbar.view.findViewById<View>(com.google.android.material.R.id.snackbar_text) as android.widget.TextView
     textView.setTextColor(ContextCompat.getColor(anchor.context, R.color.snackbar_text_color))
 

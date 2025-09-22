@@ -13,10 +13,7 @@ import kotlinx.coroutines.launch
  * ViewModel class for managing Note data between UI and Repository.
  * Uses LiveData to observe data changes and Coroutines for background operations.
  */
-class NoteViewModel(
-    context: Context,
-    private var repository: NoteRepository
-) : ViewModel() {
+class NoteViewModel(context: Context, private var repository: NoteRepository) : ViewModel() {
 
 
     // Get the logged-in user's email from the session
@@ -27,6 +24,9 @@ class NoteViewModel(
 
     // Current note ID being edited or created (0 means new note)
     var currentNoteId: Int = 0
+
+    private val _save = MutableLiveData<String>()
+    val save: LiveData<String> = _save
 
     /**
      * Retrieves all notes for the current logged-in user.
@@ -41,9 +41,12 @@ class NoteViewModel(
      */
     fun insert(note: NoteEntity) {
         saveJob?.cancel() // Cancel any ongoing save job to avoid duplicates
+        _save.value = "Saving..."
+
         saveJob = viewModelScope.launch {
             delay(500) // Delay to prevent excessive writes
             val newId = repository.insert(note.copy(id = currentNoteId))
+            _save.value = "Saved"
 
             // If creating a new note, update currentNoteId with the generated ID
             if (currentNoteId == 0) {
@@ -73,9 +76,6 @@ class NoteViewModel(
         currentNoteId = id
     }
 
-    fun getNoteById2(id: Int): NoteEntity? {
-        return repository.getNoteById(id).value
-    }
     /**
      * Retrieves a note by its ID.
      */

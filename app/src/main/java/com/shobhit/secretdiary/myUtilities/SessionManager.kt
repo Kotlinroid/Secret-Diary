@@ -2,6 +2,7 @@ package com.shobhit.secretdiary.myUtilities
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.util.Log
 import com.shobhit.secretdiary.myDataClass.LoginResponse
 import androidx.core.content.edit
 
@@ -31,7 +32,8 @@ class SessionManager(context: Context) {
     }
 
     fun logout() {
-        prefs.edit { clear() }
+        prefs.edit().clear().apply()
+        Log.d("SessionManager", "After logout: ${prefs.all}")
     }
 
 }

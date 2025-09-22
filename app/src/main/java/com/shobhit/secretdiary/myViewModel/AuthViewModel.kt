@@ -105,15 +105,8 @@ class AuthViewModel(
      */
     fun logoutUser() {
         viewModelScope.launch {
-            val response = authRepository.logoutUser(sessionManager.getUserAccessToken())
-            if (response.isSuccessful) {
-                // Clear user data and update login response
-                sessionManager.logout()
-
-            } else {
-                _errorMessage.value = "Logout failed"
-            }
-
+            authRepository.logoutUser(sessionManager.getUserAccessToken())
+            sessionManager.logout()
         }
     }
 }

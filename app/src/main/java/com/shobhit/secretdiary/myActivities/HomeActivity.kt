@@ -11,9 +11,9 @@ import androidx.core.widget.addTextChangedListener
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.StaggeredGridLayoutManager
+import com.shobhit.secretdiary.R
 import com.shobhit.secretdiary.databinding.ActivityHomeBinding
 import com.shobhit.secretdiary.myAdapter.NoteAdapter
-import com.shobhit.secretdiary.myFragments.FingerprintDialogFragment
 import com.shobhit.secretdiary.myInterface.OnClickListener
 import com.shobhit.secretdiary.myObject.CallInterface
 import com.shobhit.secretdiary.myObject.RetrofitInstance
@@ -109,6 +109,8 @@ class HomeActivity : AppCompatActivity(), OnClickListener {
                 binding.recyclerView.scrollToPosition(0) // Always scroll to top when updated
             }
             if (notes.isEmpty()) {
+                binding.noNotesIcon.setImageResource(R.drawable.bulb_icon_48)
+                binding.noNotesText.text = "Notes you add appear here"
                 binding.noNotesLayout.visibility = View.VISIBLE
             } else {
                 binding.noNotesLayout.visibility = View.GONE
@@ -120,6 +122,13 @@ class HomeActivity : AppCompatActivity(), OnClickListener {
             val query = text.toString()
             noteViewModel.searchNotes(query).observe(this) { notes ->
                 adapter.submitList(notes)
+                if (notes.isEmpty()) {
+                    binding.noNotesIcon.setImageResource(R.drawable.search_icon)
+                    binding.noNotesText.text = "No matching notes found"
+                    binding.noNotesLayout.visibility = View.VISIBLE
+                } else {
+                    binding.noNotesLayout.visibility = View.GONE
+                }
             }
         }
 
@@ -140,8 +149,9 @@ class HomeActivity : AppCompatActivity(), OnClickListener {
             Intent(this, AuthActivity::class.java).apply {
                 putExtra("showSnackbar", true)
                 startActivity(this)
+                finish()
             }
-            finish()
+
         }
 
         /** ---------------------- Double Back Press to Exit ---------------------- **/
@@ -175,7 +185,8 @@ class HomeActivity : AppCompatActivity(), OnClickListener {
     }
 
     override fun onDeleteClickListener() {
-        finish()
+       // finish()
+        adapter.notifyDataSetChanged()
     }
 
 }

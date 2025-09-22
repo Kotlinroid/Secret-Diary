@@ -2,17 +2,22 @@ package com.shobhit.secretdiary.myActivities
 
 import android.content.Intent
 import android.os.Bundle
+import android.os.Handler
 import android.util.Log
+import android.widget.PopupMenu
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.widget.addTextChangedListener
 import androidx.lifecycle.ViewModelProvider
+import com.shobhit.secretdiary.R
 import com.shobhit.secretdiary.databinding.ActivityNewNoteBinding
 import com.shobhit.secretdiary.myDataClass.NoteEntity
+import com.shobhit.secretdiary.myFragments.FingerprintDialogFragment
 import com.shobhit.secretdiary.myObject.CallInterface
 import com.shobhit.secretdiary.myRepository.NoteRepository
 import com.shobhit.secretdiary.myUtilities.NoteDatabase
+import com.shobhit.secretdiary.myUtilities.showCustomSnackbar
 import com.shobhit.secretdiary.myViewModel.NoteViewModel
 import com.shobhit.secretdiary.myViewModelFactory.NoteViewModelFactory
 
@@ -50,8 +55,10 @@ class NewNoteActivity : AppCompatActivity() {
 
         /** ----------------- Back Button Click ----------------- **/
         binding.backButtonLayout.setOnClickListener {
-            saveNote()
-            CallInterface.onClickListener.onClickListener("Note Saved.")
+           // saveNote()
+            if (noteViewModel.currentNoteId != 0) {
+                CallInterface.onClickListener.onClickListener("Note Saved.")
+            }
             finish()
         }
 
@@ -72,34 +79,51 @@ class NewNoteActivity : AppCompatActivity() {
             binding.activityTitle.text = "Note" // Change title for editing mode
             noteViewModel.getNoteById(id).observe(this) { note ->
                 note?.let {
-                    // Update title if different
-                    if (binding.noteTitleEditText.text.toString() != it.title) {
-                        binding.noteTitleEditText.setText(it.title)
+                    // Title
+                    if (!binding.noteTitleEditText.hasFocus() &&
+                        binding.noteTitleEditText.text.toString() != it.title
+                    ) {
+                        binding.noteTitleEditText.setTextKeepState(it.title)
                     }
-                    // Update content if different
-                    if (binding.noteContentEditText.text.toString() != it.content) {
-                        binding.noteContentEditText.setText(it.content)
+
+                    // Content
+                    if (!binding.noteContentEditText.hasFocus() &&
+                        binding.noteContentEditText.text.toString() != it.content
+                    ) {
+                        binding.noteContentEditText.setTextKeepState(it.content)
                     }
+
+                    // Lock Icon
+                    binding.btnLock.setImageResource(
+                        if (it.isLocked) R.drawable.lock_24px
+                        else R.drawable.lock_open_right_24px
+                    )
                 }
             }
         }
 
-        /** ----------------- Delete Button Click ----------------- **/
-        binding.btnDelete.setOnClickListener {
-//            noteViewModel.deleteById(id)
-//            CallInterface.onClickListener.onDeleteClickListener()
-//            navigate()
-//            finish()
-
-//            noteViewModel.getNoteById(id).observe(this) { note ->
+        /** ----------------- Lock Button Click ----------------- **/
+        binding.btnLock.setOnClickListener {
                 if (isLocked) {
-                    isLocked = false
-                    saveNote()
+                    val dialog = FingerprintDialogFragment{success ->
+                        if (success) {
+                            isLocked = false
+                            saveNote()
+                            showCustomSnackbar(binding.root, "Note Unlocked")
+                        }
+                    }
+                    dialog.show(supportFragmentManager, "fingerprint_dialog")
+
                 } else {
-                    isLocked = true
-                    saveNote()
+                    val dialog = FingerprintDialogFragment{success ->
+                        if (success) {
+                            isLocked = true
+                            saveNote()
+                            showCustomSnackbar(binding.root, "Note Locked")
+                        }
+                    }
+                    dialog.show(supportFragmentManager, "fingerprint_dialog")
                 }
-//            }
         }
 
         /** ----------------- Auto-Save on Text Change ----------------- **/
@@ -116,12 +140,33 @@ class NewNoteActivity : AppCompatActivity() {
             this,
             object : OnBackPressedCallback(true) {
                 override fun handleOnBackPressed() {
-                    saveNote()
+                   // saveNote()
                     CallInterface.onClickListener.onClickListener("Note Saved.")
                     finish()
                 }
             }
         )
+
+        noteViewModel.save.observe(this) {
+            binding.savingText.text = it
+        }
+
+        binding.moreOptionsButton.setOnClickListener { view ->
+            val popupMenu = PopupMenu(this, view)
+            popupMenu.menuInflater.inflate(R.menu.bottom_menu, popupMenu.menu)
+
+            popupMenu.setOnMenuItemClickListener { item ->
+                when (item.itemId) {
+                    R.id.action_delete -> {
+                        noteViewModel.deleteById(noteViewModel.currentNoteId)
+                        navigate()
+                        true
+                    }
+                    else -> false
+                }
+            }
+            popupMenu.show()
+        }
     }
 
     /**
@@ -129,15 +174,15 @@ class NewNoteActivity : AppCompatActivity() {
      * If the note exists, it updates; otherwise, it inserts a new note.
      */
     private fun saveNote() {
-        val note = NoteEntity(
-            id = noteViewModel.currentNoteId,
-            email = email,
-            date = currentDate,
-            title = binding.noteTitleEditText.text.toString().trim(),
-            content = binding.noteContentEditText.text.toString().trim(),
-            isLocked = isLocked
-        )
-        noteViewModel.insert(note)
+            val note = NoteEntity(
+                id = noteViewModel.currentNoteId,
+                email = email,
+                date = currentDate,
+                title = binding.noteTitleEditText.text.toString().trim(),
+                content = binding.noteContentEditText.text.toString().trim(),
+                isLocked = isLocked
+            )
+            noteViewModel.insert(note)
     }
 
     /**
@@ -147,6 +192,7 @@ class NewNoteActivity : AppCompatActivity() {
         Intent(this, HomeActivity::class.java).also {
             it.putExtra("noteMsg", "Note Deleted")
             startActivity(it)
+            finish()
         }
     }
 }

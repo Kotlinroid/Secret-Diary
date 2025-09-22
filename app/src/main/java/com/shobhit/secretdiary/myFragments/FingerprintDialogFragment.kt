@@ -69,8 +69,8 @@ class FingerprintDialogFragment(
         )
 
         val info = BiometricPrompt.PromptInfo.Builder()
-            .setTitle("Unlock note")
-            .setSubtitle("Authenticate to continue")
+            .setTitle("Fingerprint Authentication")
+            .setSubtitle("Place your finger on the sensor")
             .setNegativeButtonText("Cancel")
             .build()
 
